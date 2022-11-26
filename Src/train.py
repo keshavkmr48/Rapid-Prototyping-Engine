@@ -1,4 +1,9 @@
 from sklearn import preprocessing
+from sklearn import ensemble
+from sklearn import tree
+from sklearn import neighbors
+from sklearn import naive_bayes
+
 import category_encoders as ce
 import pandas as pd
 import argparse
