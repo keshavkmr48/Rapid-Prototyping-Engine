@@ -1,7 +1,17 @@
+
+# @author: KeshavKMR48
+# Date: 26-11-2022
+
 import pandas as pd
 import numpy as np
 import argparse 
 from sklearn import model_selection
+
+"""
+1. need target variable with the name target for supervised learning. Ignore for supervised learning.
+2. File name should be train.csv placed at Input/train.csv/ folder.
+3. Output file will be available at Input/train.csv/train_folds.csv
+"""
 
 parser = argparse.ArgumentParser(description='Creates k-fold data for model training by applying the chosen cross-validation strategy.')
 
