@@ -3,6 +3,7 @@ from xgboost import XGBClassifier
 from lightgbm import LGBMClassifier
 import argparse, os
 
+print('dispatcher started...')
 
 CLASSIFIERS={
         'randomforest': ensemble.RandomForestClassifier(),
@@ -14,4 +15,6 @@ CLASSIFIERS={
         'naivebayes': naive_bayes.MultinomialNB()
     }
 
+
+print('dispatcher finished...')
 

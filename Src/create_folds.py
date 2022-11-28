@@ -13,12 +13,15 @@ from sklearn import model_selection
 3. Output file will be available at Input/train.csv/train_folds.csv
 """
 
-n_splits = os.environ.get(KFOLD_SPLIT)
-cross_validation_strategy=os.environ.get(KFOLD_SPLITTING_STRATEGY)
+n_splits =int( os.environ.get("KFOLD_SPLIT"))
+cross_validation_strategy=os.environ.get("KFOLD_SPLITTING_STRATEGY")
 random_state=42
-TRAINING_DIRECTORY=os.environ.get(TRAINING_DIRECTORY)
-TRAINING_DATA=os.environ.get(TRAINING_DATA)
+TRAINING_DIRECTORY=os.environ.get("TRAINING_DIRECTORY")
+TRAINING_DATA=os.environ.get("TRAINING_DATA")
+FOLDED_DATA=os.environ.get("FOLDED_DATA")
 training_data_path = os.path.join(TRAINING_DIRECTORY,TRAINING_DATA)
+training_folded_data_path = os.path.join(TRAINING_DIRECTORY,FOLDED_DATA)
+
 
 
 if __name__=="__main__":
@@ -42,4 +45,4 @@ if __name__=="__main__":
             print(len(train_idx),len(val_idx))
             df.loc[val_idx,"kfold"]=fold
         
-    df.to_csv("Input/train/train_folds.csv", index=False)
+    df.to_csv(training_folded_data_path, index=False)

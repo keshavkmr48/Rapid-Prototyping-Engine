@@ -11,14 +11,23 @@ import joblib
 random_state=42
 
 
-id_col= os.environ.get(ID_COLS)
-target_col= os.environ.get(TARGET_COLS)
-label_encoding=os.environ.get(LABEL_ENCODING_FLAG)
-target_encoding=os.environ.get(TARGET_ENCODING_FLAG)
-ohe=os.environ.get(OHE_FLAG)
-standardization=os.environ.get(STANDARDIZATION_FLAG)
-labelencoding_cols=os.environ.get(LABEL_ENCODING_COLUMNS)
+id_col= os.environ.get("ID_COLS")
+target_col= os.environ.get("TARGET_COLS")
+# label_encoding=os.environ.get("LABEL_ENCODING_FLAG")
+label_encoding=os.getenv("LABEL_ENCODING_FLAG", 'False').lower() in ('true', '1', 't')
+# target_encoding=os.environ.get("TARGET_ENCODING_FLAG")
+target_encoding=os.getenv("TARGET_ENCODING_FLAG", 'False').lower() in ('true', '1', 't')
+# ohe=os.environ.get("OHE_FLAG")
+ohe=os.getenv("OHE_FLAG", 'False').lower() in ('true', '1', 't')
+# standardization=os.environ.get("STANDARDIZATION_FLAG")
+standardization=os.getenv("STANDARDIZATION_FLAG", 'False').lower() in ('true', '1', 't')
 
+labelencoding_cols=os.environ.get("LABEL_ENCODING_COLUMNS")
+
+print('label_encoding',label_encoding)
+print('ohe_encoding',ohe)
+print('target_encoding',target_encoding)
+print('standardization',standardization)
 
 if labelencoding_cols==None:
     labelencoding_cols=''
@@ -35,7 +44,7 @@ drop_col.extend(["kfold"])
 
 
 TRAINING_DATA=os.environ.get("TRAINING_DATA")
-kfold = os.environ.get(KFOLD_SPLIT)
+kfold = int(os.environ.get("KFOLD_SPLIT"))
 
 
 FOLD_MAPPING = {
@@ -46,19 +55,23 @@ FOLD_MAPPING = {
     4:[0,1,2,3]
 }
 
-TRAINING_DIRECTORY=os.environ.get(TRAINING_DIRECTORY)
-FOLDED_DATA=os.environ.get(FOLDED_DATA)
+TRAINING_DIRECTORY=os.environ.get("TRAINING_DIRECTORY")
+FOLDED_DATA=os.environ.get("FOLDED_DATA")
 training_folded_data_path = os.path.join(TRAINING_DIRECTORY,FOLDED_DATA)
     
 
 
 
 if __name__=="__main__":
-    df=pd.read_csv(training_folded_data_path)
+    print('preprocessing started...')
 
     for FOLD in range(kfold):
+        df=pd.read_csv(training_folded_data_path)
 
-        if not os.exist(f'Models/{FOLD}'):
+
+        print(f'{FOLD} STARTED ...')
+
+        if not os.path.exists(f'Models/{FOLD}'):
             os.makedirs(f'Models/{FOLD}')
 
         train_df=df[df.kfold.isin(FOLD_MAPPING.get(FOLD))]
@@ -70,6 +83,7 @@ if __name__=="__main__":
         valid_df=valid_df.drop(drop_col,axis=1)
 
         valid_df=valid_df[train_df.columns]
+        print(train_df.shape)
 
 
         #categorical columns
@@ -84,8 +98,9 @@ if __name__=="__main__":
             if ohe==False:
                 le_col=[col for col in cat_col if train_df[col].nunique()<=10]
             else:
-                le_col=set([col for col in cat_col if train_df[col].nunique()<=10]).intersection(set(labelencoding_cols))
-            if le_col !=None:
+                le_col=list(set([col for col in cat_col if train_df[col].nunique()<=10]).intersection(set(labelencoding_cols)))
+            if len(le_col)>0:
+                # print('label_encoding started...',le_col)
                 label_encoders=[]
                 for col in le_col:
                     lbl=preprocessing.LabelEncoder()
@@ -94,32 +109,40 @@ if __name__=="__main__":
                     valid_df.loc[:,col]=lbl.transform(valid_df[col].values.tolist())
                     label_encoders.append((col,lbl))
                 joblib.dump(label_encoders,f'Models/{FOLD}/all_col_label_encoders.pkl')
+                print('label_encoding_completed', train_df.shape)
                 
             
         # select column for one hot encoding
         if ohe==True:
-            ohe_col=set([col for col in cat_col if train_df[col].nunique()<=10]).difference(set(labelencoding_cols))
+            ohe_col=list(set([col for col in cat_col if train_df[col].nunique()<=10]).difference(set(labelencoding_cols)))
+            print(ohe_col)
             ohe_encoders=[]
             for col in ohe_col:
-                ohe=preprocessing.OneHotEncoder(drop='first',handle_unknown='infrequent_if_exist',min_frequency=0.1)
-                ohe.fit(np.array(train_df[col].values.tolist()+valid_df[col].values.tolist()).reshape(-1,1))
-                new_columns=ohe.get_feature_names_out([col])
-                temp_data_train=ohe.transform(np.array(train_df[col].values.tolist()).reshape(-1,1)).toarray()
-                temp_data_val=ohe.transform(np.array(valid_df[col].values.tolist()).reshape(-1,1)).toarray()
+                ohe_enc=preprocessing.OneHotEncoder(drop='first',handle_unknown='infrequent_if_exist',min_frequency=0.1)
+                ohe_enc.fit(np.array(train_df[col].values.tolist()+valid_df[col].values.tolist()).reshape(-1,1))
+                new_columns=ohe_enc.get_feature_names_out([col])
+                temp_data_train=ohe_enc.transform(np.array(train_df[col].values.tolist()).reshape(-1,1)).toarray()
+                temp_data_val=ohe_enc.transform(np.array(valid_df[col].values.tolist()).reshape(-1,1)).toarray()
                 # print(temp_data_train.shape,new_columns)
                 # print(temp_data_val.shape,new_columns)
                 # print(ohe.transform(np.array(train_df[col].values.tolist()).reshape(-1,1)).shape)
                 train_df.loc[:,new_columns]=temp_data_train
                 valid_df.loc[:,new_columns]=temp_data_val
-                ohe_encoders.append((col,ohe))
+
+
+
+                ohe_encoders.append((col,ohe_enc))
             joblib.dump(ohe_encoders,f'Models/{FOLD}/all_col_ohe_encoders.pkl')
+            print('ohe_encoding_completed', train_df.shape)
+
             
             
 
         # select column for target encoding
         if target_encoding==True:
             # if one of the two above is true
-            if (ohe or label_encoding):
+            prcoessed_col = le_col+ohe_col
+            if len(prcoessed_col)>1:
                 te_col=[col for col in cat_col if train_df[col].nunique()>10]
             # if both ohe or label encoding is false
             else:
@@ -157,11 +180,12 @@ if __name__=="__main__":
             train_df=train_df_original
             valid_df=valid_df_original
             joblib.dump(target_encoding_dct,f'Models/{FOLD}/all_col_target_encoding_dct.pkl')
+            print('target_encoding_completed', train_df.shape)
+
 
 
         # select column for standardization
         if standardization:
-            # print('I was here')
             standrd_encoders=[]
             for col in cont_cal:
                 stndrd = preprocessing.StandardScaler()
@@ -170,17 +194,28 @@ if __name__=="__main__":
                 valid_df.loc[:,col]=stndrd.transform(np.array(valid_df[col].values.tolist()).reshape(-1,1))
                 standrd_encoders.append((col,stndrd))
             joblib.dump(standrd_encoders,f'Models/{FOLD}/all_col_stndrd_encoders.pkl')
+            print('standardization_completed', train_df.shape)
 
+        drop_col_post_processing=ohe_col
+        # drop_col_post_processing.extend(te_col)
+
+        # print(drop_col_post_processing)
+        # print(train_df.columns)
+        print('droping columns',drop_col_post_processing)
+        train_df.drop(drop_col_post_processing,axis=1,inplace=True)
+        valid_df.drop(drop_col_post_processing,axis=1,inplace=True)
         
 
-        if not os.exist(f'Processed/train/{FOLD}'):
+        if not os.path.exists(f'Processed/train/{FOLD}'):
             os.makedirs(f'Processed/train/{FOLD}')
 
-        if not os.exist(f'Processed/valid/{FOLD}'):
+        if not os.path.exists(f'Processed/valid/{FOLD}'):
              os.makedirs(f'Processed/valid/{FOLD}')
 
-        pd.concat([train_df,y_train],axis=1).to_csv(f'Processed/train/{FOLD}train_processed.csv',index=False)
-        pd.concat([valid_df,y_val],axis=1).to_csv(f'Processed/valid/{FOLD}valid_processed.csv',index=False)
+        pd.concat([train_df,y_train],axis=1).to_csv(f'Processed/train/{FOLD}/train_processed.csv',index=False)
+        pd.concat([valid_df,y_val],axis=1).to_csv(f'Processed/valid/{FOLD}/valid_processed.csv',index=False)
+    
+    print('preprocessing_finished...')
 
 
 

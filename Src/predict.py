@@ -3,6 +3,9 @@ from . import dispatcher
 import os
 import joblib
 
-kfold = os.environ.get(KFOLD_SPLIT)
-target = os.environ.get(TARGET_COLS)
+kfold = int(os.environ.get("KFOLD_SPLIT"))
+target = os.environ.get("TARGET_COLS")
+
+
+
 
