@@ -131,6 +131,7 @@ dmypy.json
 # input data and models
 /Input
 /Models
+/Processed
 # data files
 *.csv
 *.h5

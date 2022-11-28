@@ -4,7 +4,7 @@
 
 import pandas as pd
 import numpy as np
-import argparse 
+import argparse, os
 from sklearn import model_selection
 
 """
@@ -13,21 +13,16 @@ from sklearn import model_selection
 3. Output file will be available at Input/train.csv/train_folds.csv
 """
 
-parser = argparse.ArgumentParser(description='Creates k-fold data for model training by applying the chosen cross-validation strategy.')
-
-parser.add_argument('n_split', metavar='N', type=int, nargs='?', choices=range(2,11),
-                    help='speicfy number of splits for k-fold')
-parser.add_argument('cross_validation_strategy', metavar='C', type=str, nargs='?', choices=['StratifiedKFold','KFold'],
-                    help='speicfy the cross-validation strategy of choice')
-
-args = parser.parse_args()
-n_splits=5 if args.n_split is None else args.n_split
-cross_validation_strategy='KFold' if args.cross_validation_strategy is None else args.cross_validation_strategy
+n_splits = os.environ.get(KFOLD_SPLIT)
+cross_validation_strategy=os.environ.get(KFOLD_SPLITTING_STRATEGY)
 random_state=42
+TRAINING_DIRECTORY=os.environ.get(TRAINING_DIRECTORY)
+TRAINING_DATA=os.environ.get(TRAINING_DATA)
+training_data_path = os.path.join(TRAINING_DIRECTORY,TRAINING_DATA)
 
 
 if __name__=="__main__":
-    df=pd.read_csv("Input/train.csv/train.csv")
+    df=pd.read_csv(training_data_path)
     df["kfold"]=-1
     df=df.sample(frac=1).reset_index(drop=True)
 
@@ -47,4 +42,4 @@ if __name__=="__main__":
             print(len(train_idx),len(val_idx))
             df.loc[val_idx,"kfold"]=fold
         
-    df.to_csv("Input/train.csv/train_folds.csv", index=False)
+    df.to_csv("Input/train/train_folds.csv", index=False)
