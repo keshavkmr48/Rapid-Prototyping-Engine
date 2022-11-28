@@ -128,10 +128,8 @@ if __name__=="__main__":
                 # print(ohe.transform(np.array(train_df[col].values.tolist()).reshape(-1,1)).shape)
                 train_df.loc[:,new_columns]=temp_data_train
                 valid_df.loc[:,new_columns]=temp_data_val
+                ohe_encoders.append((col,ohe_enc,new_columns))
 
-
-
-                ohe_encoders.append((col,ohe_enc))
             joblib.dump(ohe_encoders,f'Models/{FOLD}/all_col_ohe_encoders.pkl')
             print('ohe_encoding_completed', train_df.shape)
 
@@ -167,19 +165,20 @@ if __name__=="__main__":
                 te_enc.fit(X_obj,y_onehot[class_])
                 temp_train = te_enc.transform(train_df[te_col])
                 temp_val= te_enc.transform(valid_df[te_col])
+                col_name=[str(x)+'_'+str(class_) for x in temp_train.columns]
                 temp_train.columns=[str(x)+'_'+str(class_) for x in temp_train.columns]
                 temp_val.columns=[str(x)+'_'+str(class_) for x in temp_val.columns]
                 train_df_original=pd.concat([train_df_original,temp_train],axis=1)
                 valid_df_original=pd.concat([valid_df_original,temp_val],axis=1)
 
                 
-                te_encoder_class.append((class_,te_enc))
+                te_encoder_class.append((class_,te_enc,col_name))
 
-            target_encoding_dct = {'ohe':ohe_enc,'class_names':class_names,'target_encoding_list_class':te_encoder_class}
+            # target_encoding_dct = {'ohe':ohe_enc,'class_names':class_names,'target_encoding_list_class':te_encoder_class}
 
             train_df=train_df_original
             valid_df=valid_df_original
-            joblib.dump(target_encoding_dct,f'Models/{FOLD}/all_col_target_encoding_dct.pkl')
+            joblib.dump(te_encoder_class,f'Models/{FOLD}/all_col_target_encoding_dct.pkl')
             print('target_encoding_completed', train_df.shape)
 
 
@@ -214,6 +213,14 @@ if __name__=="__main__":
 
         pd.concat([train_df,y_train],axis=1).to_csv(f'Processed/train/{FOLD}/train_processed.csv',index=False)
         pd.concat([valid_df,y_val],axis=1).to_csv(f'Processed/valid/{FOLD}/valid_processed.csv',index=False)
+
+        column_dct={}
+        column_dct['ohe_encoding']=ohe_col
+        column_dct['label_encoding']=le_col
+        column_dct['target_encoding']=te_col
+        column_dct['stndrd_encoding']=cont_cal
+
+        joblib.dump(column_dct,f'Processed/processed_columns_dct.pkl')
     
     print('preprocessing_finished...')
 

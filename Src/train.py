@@ -50,6 +50,8 @@ if __name__=="__main__":
             dct['validation_prediction']=pred
             dct['val_roc_auc_score']=val_roc_auc_score
             dct['val_log_loss']=val_log_loss
+            print('validation log_loss', val_log_loss)
+            print('validation val_roc_auc_score', val_roc_auc_score)
 
             trained_classifiers[clf]=dct
         joblib.dump(trained_classifiers,f'Models/{FOLD}/all_models_classifier_metrics.pkl')
